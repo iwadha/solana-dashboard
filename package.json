@@ -1,19 +1,28 @@
 {
   "name": "solana-dashboard",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Dashboard for monitoring Solana wallet and liquidity positions",
+  "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/index.js",
+    "test:wallet": "node src/tests/testWalletFetch.js",
+    "test:liquidity": "node src/tests/testLiquidityFetch.js",
+    "test": "npm run test:wallet && npm run test:liquidity"
   },
-  "keywords": [],
+  "keywords": [
+    "solana",
+    "dashboard",
+    "defi",
+    "liquidity",
+    "blockchain"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "@shyft-to/js": "^0.2.40",
-    "@supabase/supabase-js": "^2.48.1",
-    "axios": "^1.7.9",
+    "@supabase/supabase-js": "^2.49.1",
+    "axios": "^1.8.1",
     "dotenv": "^16.4.7"
   }
 }
