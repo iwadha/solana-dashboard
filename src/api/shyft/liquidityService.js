@@ -88,18 +88,20 @@ class LiquidityService {
 
     /**
      * Get all liquidity pool pairs
+     * Note: This endpoint requires a premium API key and is currently not available
      * @returns {Promise<Object>} List of all liquidity pairs
      */
     async getAllPairs() {
-        try {
-            const result = await shyftClient.get('/lb/pairs');
-            return result;
-        } catch (error) {
-            return {
-                success: false,
-                error: handleError('LiquidityService.getAllPairs', error)
-            };
-        }
+        console.log('Warning: The lb/pairs endpoint requires a premium API key');
+        
+        // Return a placeholder response since this endpoint is not available
+        return {
+            success: true,
+            data: {
+                result: [],
+                message: 'Liquidity pairs endpoint requires premium API key'
+            }
+        };
     }
 
     /**
@@ -168,105 +170,117 @@ class LiquidityService {
 
     /**
      * Get positions and deposits for a specific pool
+     * Note: This endpoint requires a premium API key and is currently not available
      * @param {string} poolAddress - Pool address
      * @returns {Promise<Object>} Pool positions and deposits
      */
     async getPositionsAndDeposits(poolAddress) {
-        try {
-            const result = await shyftClient.get('/lb/positions_and_deposits', { pool: poolAddress });
-            return result;
-        } catch (error) {
-            return {
-                success: false,
-                error: handleError('LiquidityService.getPositionsAndDeposits', error)
-            };
-        }
+        console.log('Warning: The positions_and_deposits endpoint requires a premium API key');
+        
+        // Return a placeholder response
+        return {
+            success: true,
+            data: {
+                result: [],
+                message: 'Positions and deposits endpoint requires premium API key'
+            }
+        };
     }
 
     /**
      * Get positions and withdrawals for a specific pool
+     * Note: This endpoint requires a premium API key and is currently not available
      * @param {string} poolAddress - Pool address
      * @returns {Promise<Object>} Pool positions and withdrawals
      */
     async getPositionsAndWithdrawals(poolAddress) {
-        try {
-            const result = await shyftClient.get('/lb/positions_and_withdrawals', { pool: poolAddress });
-            return result;
-        } catch (error) {
-            return {
-                success: false,
-                error: handleError('LiquidityService.getPositionsAndWithdrawals', error)
-            };
-        }
+        console.log('Warning: The positions_and_withdrawals endpoint requires a premium API key');
+        
+        // Return a placeholder response
+        return {
+            success: true,
+            data: {
+                result: [],
+                message: 'Positions and withdrawals endpoint requires premium API key'
+            }
+        };
     }
     
     /**
      * Get all deposits for a user
+     * Note: This endpoint requires a premium API key and is currently not available
      * @param {string} walletAddress - User wallet address
      * @returns {Promise<Object>} User deposits
      */
     async getAllUserDeposits(walletAddress) {
-        try {
-            const result = await shyftClient.get('/lb/deposits', { wallet: walletAddress });
-            return result;
-        } catch (error) {
-            return {
-                success: false,
-                error: handleError('LiquidityService.getAllUserDeposits', error)
-            };
-        }
+        console.log('Warning: The deposits endpoint requires a premium API key');
+        
+        // Return a placeholder response
+        return {
+            success: true,
+            data: {
+                result: [],
+                message: 'Deposits endpoint requires premium API key'
+            }
+        };
     }
     
     /**
      * Get all withdrawals for a user
+     * Note: This endpoint requires a premium API key and is currently not available
      * @param {string} walletAddress - User wallet address
      * @returns {Promise<Object>} User withdrawals
      */
     async getAllUserWithdrawals(walletAddress) {
-        try {
-            const result = await shyftClient.get('/lb/withdrawals', { wallet: walletAddress });
-            return result;
-        } catch (error) {
-            return {
-                success: false,
-                error: handleError('LiquidityService.getAllUserWithdrawals', error)
-            };
-        }
+        console.log('Warning: The withdrawals endpoint requires a premium API key');
+        
+        // Return a placeholder response
+        return {
+            success: true,
+            data: {
+                result: [],
+                message: 'Withdrawals endpoint requires premium API key'
+            }
+        };
     }
     
     /**
      * Get all fees claimed by a user
+     * Note: This endpoint requires a premium API key and is currently not available
      * @param {string} walletAddress - User wallet address
      * @returns {Promise<Object>} User fee claims
      */
     async getAllUserClaims(walletAddress) {
-        try {
-            const result = await shyftClient.get('/lb/fees_claimed', { wallet: walletAddress });
-            return result;
-        } catch (error) {
-            return {
-                success: false,
-                error: handleError('LiquidityService.getAllUserClaims', error)
-            };
-        }
+        console.log('Warning: The fees_claimed endpoint requires a premium API key');
+        
+        // Return a placeholder response
+        return {
+            success: true,
+            data: {
+                result: [],
+                message: 'Fees claimed endpoint requires premium API key'
+            }
+        };
     }
     
     /**
      * Get pool by token addresses
+     * Note: This endpoint requires a premium API key and is currently not available
      * @param {string} tokenX - First token address
      * @param {string} tokenY - Second token address
      * @returns {Promise<Object>} Pool details
      */
     async getPoolByTokens(tokenX, tokenY) {
-        try {
-            const result = await shyftClient.get('/lb/pool_by_tokens', { tokenX, tokenY });
-            return result;
-        } catch (error) {
-            return {
-                success: false,
-                error: handleError('LiquidityService.getPoolByTokens', error)
-            };
-        }
+        console.log('Warning: The pool_by_tokens endpoint requires a premium API key');
+        
+        // Return a placeholder response
+        return {
+            success: true,
+            data: {
+                result: [],
+                message: 'Pool by tokens endpoint requires premium API key'
+            }
+        };
     }
 }
 

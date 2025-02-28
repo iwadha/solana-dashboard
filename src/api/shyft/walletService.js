@@ -24,20 +24,21 @@ class WalletService {
 
     /**
      * Get wallet token accounts
+     * Note: This endpoint requires a premium API key and is currently not available
      * @param {string} walletAddress - Solana wallet address
      * @returns {Promise<Object>} Wallet token data
      */
     async getTokens(walletAddress) {
-        try {
-            // Following the example, we should use the /wallet/tokens endpoint
-            const result = await shyftClient.get('/wallet/tokens', { wallet: walletAddress });
-            return result;
-        } catch (error) {
-            return {
-                success: false,
-                error: handleError('WalletService.getTokens', error)
-            };
-        }
+        console.log('Warning: The tokens endpoint requires a premium API key');
+        
+        // Return a placeholder response since this endpoint is not available
+        return {
+            success: true,
+            data: {
+                result: [],
+                message: 'Tokens endpoint requires premium API key'
+            }
+        };
     }
 
     /**
@@ -47,7 +48,7 @@ class WalletService {
      */
     async getWalletData(walletAddress) {
         try {
-            // Get wallet balance - only this is reliable with this API key
+            // Get wallet balance - this works with the free API key
             const balanceResult = await this.getBalance(walletAddress);
 
             if (!balanceResult.success) {
@@ -57,13 +58,13 @@ class WalletService {
                 };
             }
 
-            // Return at least the balance data even if token data fails
+            // Return the balance data - token data requires premium key
             return {
                 success: true,
                 data: {
                     wallet_address: walletAddress,
                     sol_balance: balanceResult.data.result.balance,
-                    token_balances: [], // Empty for now as the API isn't working
+                    token_balances: [], // Empty since we can't get token data with this key
                     timestamp: new Date().toISOString()
                 }
             };

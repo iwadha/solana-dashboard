@@ -7,14 +7,15 @@ const { handleError } = require('../../utils/errorHandler');
  */
 class ShyftClient {
     constructor() {
-        // REST API endpoint
+        // REST API endpoint - confirmed working for basic wallet balance
         this.restBaseUrl = 'https://api.shyft.to/sol/v1';
-        // GraphQL API endpoint
-        this.graphqlUrl = 'https://programs.shyft.to/v0/graphql/?api_key=' + config.SHYFT_API_KEY + '&network=' + config.NETWORK;
+        // GraphQL API endpoint - should be correct for GraphQL access
+        this.graphqlUrl = 'https://programs.shyft.to/v0/graphql';
         
         this.network = config.NETWORK;
         this.headers = {
-            'x-api-key': config.SHYFT_API_KEY
+            'x-api-key': config.SHYFT_API_KEY,
+            'Content-Type': 'application/json'
         };
         console.log('Using Shyft API key:', config.SHYFT_API_KEY);
     }
@@ -36,7 +37,9 @@ class ShyftClient {
                 .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
                 .join('&');
                 
-            const url = `${this.restBaseUrl}${endpoint}${queryString ? '?' + queryString : ''}`;
+            // Fix URL construction to properly handle endpoints with or without leading slash
+            const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+            const url = `${this.restBaseUrl}${cleanEndpoint}${queryString ? '?' + queryString : ''}`;
             
             const response = await axios.get(url, { headers: this.headers });
             
@@ -60,10 +63,24 @@ class ShyftClient {
      */
     async graphql(query, variables = {}) {
         try {
+            // For the GraphQL endpoint, API key is passed as a query parameter
+            // This is different from the REST API which uses header
+            const url = `${this.graphqlUrl}?api_key=${config.SHYFT_API_KEY}&network=${this.network}`;
+            
+            const body = {
+                query,
+                variables
+            };
+            
+            // Note: For GraphQL, we don't send the API key in the header
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
             const response = await axios.post(
-                this.graphqlUrl,
-                { query, variables },
-                { headers: { 'Content-Type': 'application/json' } }
+                url,
+                body,
+                { headers }
             );
             
             if (response.data.errors) {

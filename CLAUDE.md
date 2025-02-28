@@ -9,7 +9,7 @@
 - Test API integration: `node src/test.js`
 
 ## Environment Variables
-- Shyft API Key: `AbxJeco_29wXz_qF` (has access to GraphQL API and limited REST endpoints)
+- Shyft API Key: `AbxJeco_29wXz_qF` (Free tier key with limited access)
 - Supabase URL: `https://ggjkqmdwctovbblgzgyg.supabase.co`
 - Supabase Key: Stored in `.env` file
 
@@ -42,12 +42,20 @@ solana-dashboard/
 ## Shyft API Integration
 - REST API available at `https://api.shyft.to/sol/v1`
 - GraphQL API available at `https://programs.shyft.to/v0/graphql`
-- Working endpoints:
-  - `/wallet/balance`: Get wallet SOL balance
-  - GraphQL: Get all user positions
-- Limited access endpoints (may require premium key):
-  - `/wallet/tokens`: Get wallet token balances
-  - `/lb/pairs`: Get all liquidity pairs
+
+### Available with free API key:
+- `/wallet/balance`: Get wallet SOL balance 
+- GraphQL API: User positions using query parameter for authentication (api_key=KEY&network=mainnet-beta)
+
+### Requires premium API key (currently unavailable):
+- `/wallet/tokens`: Get wallet token balances
+- `/lb/pairs`: Get all liquidity pairs
+- `/lb/positions_and_deposits`: Get pool positions and deposits
+- `/lb/positions_and_withdrawals`: Get pool positions and withdrawals
+- `/lb/deposits`: Get user deposits
+- `/lb/withdrawals`: Get user withdrawals
+- `/lb/fees_claimed`: Get user fee claims
+- `/lb/pool_by_tokens`: Get pool by token addresses
 
 ## Code Style Guidelines
 - **Module System**: CommonJS (require/module.exports)
