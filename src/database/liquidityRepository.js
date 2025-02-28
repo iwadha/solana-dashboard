@@ -6,34 +6,68 @@ const { handleError } = require('../utils/errorHandler');
  */
 class LiquidityRepository {
     /**
-     * Store pool data in the database
+     * Store pool data in the database using upsert
      * @param {Object} poolData - Pool data to store
      * @returns {Promise<Object>} Result of the storage operation
      */
     async storePoolData(poolData) {
         try {
-            const { data, error } = await supabase
+            // Create record data
+            const recordData = {
+                pool_address: poolData.pool_address,
+                token_x: poolData.token_x,
+                token_y: poolData.token_y,
+                token_x_symbol: poolData.token_x_symbol,
+                token_y_symbol: poolData.token_y_symbol,
+                bin_step: poolData.bin_step,
+                created_at: poolData.timestamp || new Date().toISOString()
+            };
+
+            // Check if pool already exists
+            const { data: existingData, error: queryError } = await supabase
                 .from('pools')
-                .insert([{
-                    pool_address: poolData.pool_address,
-                    token_x: poolData.token_x,
-                    token_y: poolData.token_y,
-                    token_x_symbol: poolData.token_x_symbol,
-                    token_y_symbol: poolData.token_y_symbol,
-                    bin_step: poolData.bin_step,
-                    created_at: poolData.timestamp || new Date().toISOString()
-                }]);
-                
-            if (error) {
+                .select('id')
+                .eq('pool_address', poolData.pool_address)
+                .limit(1);
+
+            if (queryError) {
                 return {
                     success: false,
-                    error: handleError('LiquidityRepository.storePoolData', error, false)
+                    error: handleError('LiquidityRepository.storePoolData.query', queryError, false)
+                };
+            }
+
+            let result;
+            
+            // If pool already exists, update the existing record
+            if (existingData && existingData.length > 0) {
+                const { data, error } = await supabase
+                    .from('pools')
+                    .update(recordData)
+                    .eq('pool_address', poolData.pool_address)
+                    .select();
+                    
+                result = { data, error };
+            } else {
+                // If pool doesn't exist, insert a new record
+                const { data, error } = await supabase
+                    .from('pools')
+                    .insert([recordData])
+                    .select();
+                    
+                result = { data, error };
+            }
+                
+            if (result.error) {
+                return {
+                    success: false,
+                    error: handleError('LiquidityRepository.storePoolData', result.error, false)
                 };
             }
             
             return {
                 success: true,
-                data
+                data: result.data
             };
         } catch (error) {
             return {
@@ -44,36 +78,70 @@ class LiquidityRepository {
     }
     
     /**
-     * Store user position data
+     * Store user position data using upsert
      * @param {Object} positionData - Position data to store
      * @returns {Promise<Object>} Result of the storage operation
      */
     async storePositionData(positionData) {
         try {
-            const { data, error } = await supabase
+            // Create record data
+            const recordData = {
+                wallet_address: positionData.wallet_address,
+                pool_address: positionData.pool_address,
+                position_id: positionData.position_id,
+                lower_bin: positionData.lower_bin,
+                upper_bin: positionData.upper_bin,
+                liquidity: positionData.liquidity,
+                token_x_amount: positionData.token_x_amount,
+                token_y_amount: positionData.token_y_amount,
+                created_at: positionData.timestamp || new Date().toISOString()
+            };
+
+            // Check if position already exists
+            const { data: existingData, error: queryError } = await supabase
                 .from('user_positions')
-                .insert([{
-                    wallet_address: positionData.wallet_address,
-                    pool_address: positionData.pool_address,
-                    position_id: positionData.position_id,
-                    lower_bin: positionData.lower_bin,
-                    upper_bin: positionData.upper_bin,
-                    liquidity: positionData.liquidity,
-                    token_x_amount: positionData.token_x_amount,
-                    token_y_amount: positionData.token_y_amount,
-                    created_at: positionData.timestamp || new Date().toISOString()
-                }]);
-                
-            if (error) {
+                .select('id')
+                .eq('position_id', positionData.position_id)
+                .limit(1);
+
+            if (queryError) {
                 return {
                     success: false,
-                    error: handleError('LiquidityRepository.storePositionData', error, false)
+                    error: handleError('LiquidityRepository.storePositionData.query', queryError, false)
+                };
+            }
+
+            let result;
+            
+            // If position already exists, update it
+            if (existingData && existingData.length > 0) {
+                const { data, error } = await supabase
+                    .from('user_positions')
+                    .update(recordData)
+                    .eq('position_id', positionData.position_id)
+                    .select();
+                    
+                result = { data, error };
+            } else {
+                // If position doesn't exist, insert it
+                const { data, error } = await supabase
+                    .from('user_positions')
+                    .insert([recordData])
+                    .select();
+                    
+                result = { data, error };
+            }
+                
+            if (result.error) {
+                return {
+                    success: false,
+                    error: handleError('LiquidityRepository.storePositionData', result.error, false)
                 };
             }
             
             return {
                 success: true,
-                data
+                data: result.data
             };
         } catch (error) {
             return {

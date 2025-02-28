@@ -6,32 +6,68 @@ const { handleError } = require('../utils/errorHandler');
  */
 class WalletRepository {
     /**
-     * Store wallet data in the database
+     * Store wallet data in the database using upsert
      * @param {Object} walletData - Wallet data to store
      * @returns {Promise<Object>} Result of the storage operation
      */
     async storeWalletData(walletData) {
         try {
-            const { data, error } = await supabase
+            // Create record data
+            const recordData = {
+                wallet_address: walletData.wallet_address,
+                sol_balance: walletData.sol_balance,
+                token_balances: walletData.token_balances || [],
+                liquidity_positions: walletData.liquidity_positions || [],
+                created_at: walletData.timestamp || new Date().toISOString()
+            };
+
+            // First check if this wallet address already exists
+            const { data: existingData, error: queryError } = await supabase
                 .from('wallets')
-                .insert([{
-                    wallet_address: walletData.wallet_address,
-                    sol_balance: walletData.sol_balance,
-                    token_balances: walletData.token_balances || [],
-                    liquidity_positions: walletData.liquidity_positions || [],
-                    created_at: walletData.timestamp || new Date().toISOString()
-                }]);
-                
-            if (error) {
+                .select('id')
+                .eq('wallet_address', walletData.wallet_address)
+                .limit(1);
+
+            if (queryError) {
                 return {
                     success: false,
-                    error: handleError('WalletRepository.storeWalletData', error, false)
+                    error: handleError('WalletRepository.storeWalletData.query', queryError, false)
+                };
+            }
+
+            let result;
+            
+            // If wallet already exists, update the existing record
+            if (existingData && existingData.length > 0) {
+                const { data, error } = await supabase
+                    .from('wallets')
+                    .update(recordData)
+                    .eq('wallet_address', walletData.wallet_address)
+                    .select();
+                    
+                result = { data, error };
+                console.log(`Updated existing wallet record for ${walletData.wallet_address}`);
+            } else {
+                // If wallet doesn't exist, insert a new record
+                const { data, error } = await supabase
+                    .from('wallets')
+                    .insert([recordData])
+                    .select();
+                    
+                result = { data, error };
+                console.log(`Created new wallet record for ${walletData.wallet_address}`);
+            }
+                
+            if (result.error) {
+                return {
+                    success: false,
+                    error: handleError('WalletRepository.storeWalletData', result.error, false)
                 };
             }
             
             return {
                 success: true,
-                data
+                data: result.data
             };
         } catch (error) {
             return {
