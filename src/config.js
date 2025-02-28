@@ -18,6 +18,6 @@ module.exports = {
     ],
     
     // Database settings
-    SUPABASE_URL: 'https://ggjkqmdwctovbblgzgyg.supabase.co',
-    SUPABASE_KEY: process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnamtxbWR3Y3RvdmJibGd6Z3lnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzgzMDE4NjQsImV4cCI6MjA1Mzg3Nzg2NH0.9WqKxkLRwQJ7io9v45xnzaOSH1fg2k-RHkmSIce9KnE'
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_KEY: process.env.SUPABASE_KEY
 };

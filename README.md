@@ -78,6 +78,7 @@ npm install
 3. Create a `.env` file in the root directory with the following content:
 ```
 SHYFT_API_KEY=AbxJeco_29wXz_qF
+SUPABASE_URL=https://ggjkqmdwctovbblgzgyg.supabase.co
 SUPABASE_KEY=your_supabase_key_here
 ```
 

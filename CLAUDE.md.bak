@@ -8,10 +8,9 @@
 - Run liquidity test: `npm run test:liquidity`
 - Test API integration: `node src/test.js`
 
-## Environment Variables
-- Shyft API Key: `AbxJeco_29wXz_qF` (has access to GraphQL API and limited REST endpoints)
-- Supabase URL: `https://ggjkqmdwctovbblgzgyg.supabase.co`
-- Supabase Key: Stored in `.env` file
+## API Keys
+- Shyft API Key: `AbxJeco_29wXz_qF`
+- This key has access to the GraphQL API and limited REST API endpoints
 
 ## Project Structure
 ```
