@@ -48,51 +48,68 @@ class DataService {
                 return pairsResult; // Return error from API
             }
             
-            const pairs = pairsResult.data.result || [];
-            const positions = [];
+            // Get positions directly using GraphQL
+            const positionsResult = await liquidityService.getUserPositions(walletAddress);
             
-            // For each pair, get and store pool data
-            for (const pair of pairs) {
-                const poolAddress = pair.pool_address;
+            if (!positionsResult.success) {
+                return positionsResult;
+            }
+            
+            const positions = positionsResult.data.positions || [];
+            const pairs = pairsResult.data.result || [];
+            
+            // Store positions and related pools
+            for (const position of positions) {
+                const lbPairAddress = position.lbPair;
                 
-                // Store pool data
-                await liquidityRepository.storePoolData({
-                    pool_address: poolAddress,
-                    token_x: pair.token_addresses?.token_x,
-                    token_y: pair.token_addresses?.token_y,
-                    token_x_symbol: pair.token_names?.token_x,
-                    token_y_symbol: pair.token_names?.token_y,
-                    bin_step: pair.bin_step
-                });
+                // Try to get details about this LB pair
+                const lbPairResult = await liquidityService.getLbPairDetails(lbPairAddress);
+                let tokenX = null, tokenY = null, binStep = null;
                 
-                // Get positions for this pool
-                const positionsResult = await liquidityService.getPositionsAndDeposits(poolAddress);
-                
-                if (!positionsResult.success) {
-                    console.error(`Error getting positions for pool ${poolAddress}:`, positionsResult.error);
-                    continue; // Skip to next pair
-                }
-                
-                // Filter positions for this wallet
-                const userPositions = positionsResult.data.result?.filter(
-                    pos => pos.owner_address === walletAddress
-                ) || [];
-                
-                // Store positions and collect for return
-                for (const pos of userPositions) {
-                    positions.push(pos);
+                // If we got LB pair details, use them
+                if (lbPairResult.success && lbPairResult.data.lbPair) {
+                    const lbPair = lbPairResult.data.lbPair;
+                    tokenX = lbPair.tokenXMint;
+                    tokenY = lbPair.tokenYMint;
+                    binStep = lbPair.binStep;
                     
-                    await liquidityRepository.storePositionData({
-                        wallet_address: walletAddress,
-                        pool_address: poolAddress,
-                        position_id: pos.position_id,
-                        lower_bin: pos.lower_bin,
-                        upper_bin: pos.upper_bin,
-                        liquidity: pos.liquidity,
-                        token_x_amount: pos.token_x_amount,
-                        token_y_amount: pos.token_y_amount
+                    // Store pool data
+                    await liquidityRepository.storePoolData({
+                        pool_address: lbPairAddress,
+                        token_x: tokenX,
+                        token_y: tokenY,
+                        token_x_symbol: '', // Would need to fetch token metadata
+                        token_y_symbol: '', // Would need to fetch token metadata
+                        bin_step: binStep
                     });
+                } else {
+                    // Fallback to find matching pair in the pairs result
+                    const matchingPair = pairs.find(pair => pair.pool_address === lbPairAddress);
+                    
+                    if (matchingPair) {
+                        // Store pool data from pairs result
+                        await liquidityRepository.storePoolData({
+                            pool_address: lbPairAddress,
+                            token_x: matchingPair.token_addresses?.token_x,
+                            token_y: matchingPair.token_addresses?.token_y,
+                            token_x_symbol: matchingPair.token_names?.token_x,
+                            token_y_symbol: matchingPair.token_names?.token_y,
+                            bin_step: matchingPair.bin_step
+                        });
+                    }
                 }
+                
+                // Store position data
+                await liquidityRepository.storePositionData({
+                    wallet_address: walletAddress,
+                    pool_address: lbPairAddress,
+                    position_id: position.pubkey || position.id || `${lbPairAddress}-${position.lowerBinId}-${position.upperBinId}`,
+                    lower_bin: position.lowerBinId,
+                    upper_bin: position.upperBinId,
+                    liquidity: position.liquidityShares || 0,
+                    token_x_amount: 0, // These may not be directly available in GraphQL response
+                    token_y_amount: 0  // These may not be directly available in GraphQL response
+                });
             }
             
             return {

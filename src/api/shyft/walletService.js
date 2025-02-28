@@ -29,8 +29,8 @@ class WalletService {
      */
     async getTokens(walletAddress) {
         try {
-            // The correct endpoint is /wallet/token_balance not /wallet/tokens
-            const result = await shyftClient.get('/wallet/token_balance', { wallet: walletAddress });
+            // Following the example, we should use the /wallet/tokens endpoint
+            const result = await shyftClient.get('/wallet/tokens', { wallet: walletAddress });
             return result;
         } catch (error) {
             return {

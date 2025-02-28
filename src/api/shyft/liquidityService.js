@@ -5,6 +5,87 @@ const { handleError } = require('../../utils/errorHandler');
  * Service for fetching liquidity-related data
  */
 class LiquidityService {
+    constructor() {
+        // GraphQL queries for positions
+        this.positionQuery = `
+            query GetPosition($owner: String!) {
+                meteora_dlmm_Position(where: { owner: { _eq: $owner } }) {
+                    _lamports
+                    _updatedAt
+                    lastUpdatedAt
+                    lbPair
+                    lowerBinId
+                    owner
+                    totalClaimedFeeXAmount
+                    totalClaimedFeeYAmount
+                    upperBinId
+                    feeInfos
+                    liquidityShares
+                    pubkey
+                    reserved
+                    rewardInfos
+                    totalClaimedRewards
+                }
+            }
+        `;
+
+        this.positionV2Query = `
+            query GetPositionV2($owner: String!) {
+                meteora_dlmm_PositionV2(where: { owner: { _eq: $owner } }) {
+                    _lamports
+                    _updatedAt
+                    feeOwner
+                    lastUpdatedAt
+                    lbPair
+                    lockReleasePoint
+                    lowerBinId
+                    operator
+                    owner
+                    subjectedToBootstrapLiquidityLocking
+                    totalClaimedFeeXAmount
+                    totalClaimedFeeYAmount
+                    upperBinId
+                }
+            }
+        `;
+
+        this.lbPairQuery = `
+            query GetLbPair($lbpair: String!) {
+                meteora_dlmm_LbPair(
+                    where: { pubkey: { _eq: $lbpair } }
+                ) {
+                    _lamports
+                    _updatedAt
+                    activationPoint
+                    activationType
+                    activeId
+                    baseKey
+                    binStep
+                    creator
+                    lastUpdatedAt
+                    lockDuration
+                    oracle
+                    pairType
+                    parameters
+                    preActivationDuration
+                    preActivationSwapAddress
+                    protocolFee
+                    requireBaseFactorSeed
+                    reserveX
+                    reserveY
+                    status
+                    tokenXMint
+                    tokenYMint
+                    whitelistedWallet
+                    binStepSeed
+                    bumpSeed
+                    rewardInfos
+                    pubkey
+                }
+            }
+        `;
+    }
+
     /**
      * Get all liquidity pool pairs
      * @returns {Promise<Object>} List of all liquidity pairs
@@ -17,6 +98,70 @@ class LiquidityService {
             return {
                 success: false,
                 error: handleError('LiquidityService.getAllPairs', error)
+            };
+        }
+    }
+
+    /**
+     * Get positions for a specific user using GraphQL
+     * @param {string} walletAddress - User wallet address
+     * @returns {Promise<Object>} User positions
+     */
+    async getUserPositions(walletAddress) {
+        try {
+            // Fetch both V1 and V2 positions
+            const positionsV1Result = await shyftClient.graphql(this.positionQuery, { owner: walletAddress });
+            const positionsV2Result = await shyftClient.graphql(this.positionV2Query, { owner: walletAddress });
+            
+            if (!positionsV1Result.success || !positionsV2Result.success) {
+                return {
+                    success: false,
+                    error: positionsV1Result.error || positionsV2Result.error
+                };
+            }
+            
+            // Combine both position types
+            const positionsV1 = positionsV1Result.data.data.meteora_dlmm_Position || [];
+            const positionsV2 = positionsV2Result.data.data.meteora_dlmm_PositionV2 || [];
+            const combinedPositions = [...positionsV1, ...positionsV2];
+            
+            return {
+                success: true,
+                data: {
+                    positions: combinedPositions
+                }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: handleError('LiquidityService.getUserPositions', error)
+            };
+        }
+    }
+
+    /**
+     * Get details for a specific LB pair using GraphQL
+     * @param {string} lbPairAddress - LB pair address 
+     * @returns {Promise<Object>} LB pair details
+     */
+    async getLbPairDetails(lbPairAddress) {
+        try {
+            const result = await shyftClient.graphql(this.lbPairQuery, { lbpair: lbPairAddress });
+            
+            if (!result.success) {
+                return result;
+            }
+            
+            return {
+                success: true,
+                data: {
+                    lbPair: result.data.data.meteora_dlmm_LbPair[0] || null
+                }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: handleError('LiquidityService.getLbPairDetails', error)
             };
         }
     }

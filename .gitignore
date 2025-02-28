@@ -21,6 +21,7 @@ yarn-error.log*
 
 # Backup files
 /.backup
+/api_examples
 
 # System files
 .DS_Store
