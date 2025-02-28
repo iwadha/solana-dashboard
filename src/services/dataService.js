@@ -254,6 +254,47 @@ class DataService {
     }
     
     /**
+     * Fetch reward claims for a user
+     * @param {string} walletAddress - Wallet address
+     * @returns {Promise<Object>} Operation result
+     */
+    async fetchAndStoreUserRewardClaims(walletAddress) {
+        try {
+            const rewardsResult = await liquidityService.getAllUserRewardClaims(walletAddress);
+            
+            if (!rewardsResult.success) {
+                return rewardsResult;
+            }
+            
+            const rewards = rewardsResult.data.result || [];
+            
+            // Store each reward claim
+            for (const reward of rewards) {
+                await liquidityRepository.storeRewardClaimData({
+                    wallet_address: walletAddress,
+                    pool_address: reward.pool_address,
+                    position_id: reward.position_id,
+                    transaction_hash: reward.tx_hash,
+                    amounts: reward.amounts,
+                    timestamp: reward.timestamp
+                });
+            }
+            
+            return {
+                success: true,
+                data: {
+                    rewards
+                }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: handleError('DataService.fetchAndStoreUserRewardClaims', error)
+            };
+        }
+    }
+    
+    /**
      * Get wallet dashboard data
      * @param {string} walletAddress - Wallet address
      * @returns {Promise<Object>} Dashboard data

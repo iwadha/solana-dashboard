@@ -228,39 +228,140 @@ class LiquidityRepository {
     }
     
     /**
-     * Store user claim data
-     * @param {Object} claimData - Claim data to store
+     * Store user fee claim data
+     * @param {Object} claimData - Fee claim data to store
      * @returns {Promise<Object>} Result of the storage operation
      */
     async storeClaimData(claimData) {
         try {
-            const { data, error } = await supabase
+            // Check if claim already exists
+            const { data: existingData, error: queryError } = await supabase
                 .from('user_claims')
-                .insert([{
-                    wallet_address: claimData.wallet_address,
-                    pool_address: claimData.pool_address,
-                    position_id: claimData.position_id,
-                    transaction_hash: claimData.transaction_hash,
-                    token_x_amount: claimData.token_x_amount,
-                    token_y_amount: claimData.token_y_amount,
-                    timestamp: claimData.timestamp || new Date().toISOString()
-                }]);
-                
-            if (error) {
+                .select('id')
+                .eq('transaction_hash', claimData.transaction_hash)
+                .limit(1);
+
+            if (queryError) {
                 return {
                     success: false,
-                    error: handleError('LiquidityRepository.storeClaimData', error, false)
+                    error: handleError('LiquidityRepository.storeClaimData.query', queryError, false)
+                };
+            }
+
+            let result;
+            const recordData = {
+                wallet_address: claimData.wallet_address,
+                pool_address: claimData.pool_address,
+                position_id: claimData.position_id,
+                transaction_hash: claimData.transaction_hash,
+                token_x_amount: claimData.token_x_amount,
+                token_y_amount: claimData.token_y_amount,
+                timestamp: claimData.timestamp || new Date().toISOString()
+            };
+
+            // If claim already exists, update it
+            if (existingData && existingData.length > 0) {
+                const { data, error } = await supabase
+                    .from('user_claims')
+                    .update(recordData)
+                    .eq('transaction_hash', claimData.transaction_hash)
+                    .select();
+                    
+                result = { data, error };
+            } else {
+                // If claim doesn't exist, insert it
+                const { data, error } = await supabase
+                    .from('user_claims')
+                    .insert([recordData])
+                    .select();
+                    
+                result = { data, error };
+            }
+                
+            if (result.error) {
+                return {
+                    success: false,
+                    error: handleError('LiquidityRepository.storeClaimData', result.error, false)
                 };
             }
             
             return {
                 success: true,
-                data
+                data: result.data
             };
         } catch (error) {
             return {
                 success: false,
                 error: handleError('LiquidityRepository.storeClaimData', error)
+            };
+        }
+    }
+    
+    /**
+     * Store user reward claim data
+     * @param {Object} rewardData - Reward claim data to store
+     * @returns {Promise<Object>} Result of the storage operation
+     */
+    async storeRewardClaimData(rewardData) {
+        try {
+            // Check if reward claim already exists
+            const { data: existingData, error: queryError } = await supabase
+                .from('user_rewards')
+                .select('id')
+                .eq('transaction_hash', rewardData.transaction_hash)
+                .limit(1);
+
+            if (queryError) {
+                return {
+                    success: false,
+                    error: handleError('LiquidityRepository.storeRewardClaimData.query', queryError, false)
+                };
+            }
+
+            let result;
+            const recordData = {
+                wallet_address: rewardData.wallet_address,
+                pool_address: rewardData.pool_address,
+                position_id: rewardData.position_id,
+                transaction_hash: rewardData.transaction_hash,
+                amounts: rewardData.amounts,
+                timestamp: rewardData.timestamp || new Date().toISOString()
+            };
+
+            // If reward claim already exists, update it
+            if (existingData && existingData.length > 0) {
+                const { data, error } = await supabase
+                    .from('user_rewards')
+                    .update(recordData)
+                    .eq('transaction_hash', rewardData.transaction_hash)
+                    .select();
+                    
+                result = { data, error };
+            } else {
+                // If reward claim doesn't exist, insert it
+                const { data, error } = await supabase
+                    .from('user_rewards')
+                    .insert([recordData])
+                    .select();
+                    
+                result = { data, error };
+            }
+                
+            if (result.error) {
+                return {
+                    success: false,
+                    error: handleError('LiquidityRepository.storeRewardClaimData', result.error, false)
+                };
+            }
+            
+            return {
+                success: true,
+                data: result.data
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: handleError('LiquidityRepository.storeRewardClaimData', error)
             };
         }
     }

@@ -74,6 +74,40 @@ async function testLiquidityFetch() {
             console.error('❌ Failed to fetch user withdrawals:', withdrawalsResult.error);
         }
         
+        // Test fee claims fetch
+        console.log('\nTesting getAllUserClaims()...');
+        const claimsResult = await liquidityService.getAllUserClaims(testWallet);
+        
+        if (claimsResult.success) {
+            console.log('✅ Successfully fetched user fee claims:');
+            console.log(`Found ${claimsResult.data.result?.length || 0} fee claims`);
+            
+            // Show first claim if available
+            if (claimsResult.data.result && claimsResult.data.result.length > 0) {
+                console.log('Sample fee claim:');
+                console.log(JSON.stringify(claimsResult.data.result[0], null, 2));
+            }
+        } else {
+            console.error('❌ Failed to fetch user fee claims:', claimsResult.error);
+        }
+        
+        // Test reward claims fetch
+        console.log('\nTesting getAllUserRewardClaims()...');
+        const rewardsResult = await liquidityService.getAllUserRewardClaims(testWallet);
+        
+        if (rewardsResult.success) {
+            console.log('✅ Successfully fetched user reward claims:');
+            console.log(`Found ${rewardsResult.data.result?.length || 0} reward claims`);
+            
+            // Show first reward claim if available
+            if (rewardsResult.data.result && rewardsResult.data.result.length > 0) {
+                console.log('Sample reward claim:');
+                console.log(JSON.stringify(rewardsResult.data.result[0], null, 2));
+            }
+        } else {
+            console.error('❌ Failed to fetch user reward claims:', rewardsResult.error);
+        }
+        
     } catch (error) {
         console.error('Error in test:', error);
     }

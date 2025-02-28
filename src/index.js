@@ -55,17 +55,27 @@ async function main() {
             console.log(`✅ Withdrawal data stored successfully (${withdrawalResult.data.withdrawals.length} withdrawals)`);
         }
         
-        // Step 5: Fetch and store user claims
-        console.log('\nFetching claim data...');
+        // Step 5: Fetch and store user fee claims
+        console.log('\nFetching fee claim data...');
         const claimResult = await dataService.fetchAndStoreUserClaims(walletAddress);
         
         if (!claimResult.success) {
-            console.error('Failed to fetch claim data:', claimResult.error);
+            console.error('Failed to fetch fee claim data:', claimResult.error);
         } else {
-            console.log(`✅ Claim data stored successfully (${claimResult.data.claims.length} claims)`);
+            console.log(`✅ Fee claim data stored successfully (${claimResult.data.claims.length} fee claims)`);
         }
         
-        // Step 6: Get dashboard data
+        // Step 6: Fetch and store user reward claims
+        console.log('\nFetching reward claim data...');
+        const rewardResult = await dataService.fetchAndStoreUserRewardClaims(walletAddress);
+        
+        if (!rewardResult.success) {
+            console.error('Failed to fetch reward claim data:', rewardResult.error);
+        } else {
+            console.log(`✅ Reward claim data stored successfully (${rewardResult.data.rewards.length} reward claims)`);
+        }
+        
+        // Step 7: Get dashboard data
         console.log('\nFetching dashboard data...');
         const dashboardResult = await dataService.getWalletDashboardData(walletAddress);
         
