@@ -44,10 +44,23 @@ solana-dashboard/
 - GraphQL API available at `https://programs.shyft.to/v0/graphql`
 
 ### Available with free API key:
-- `/wallet/balance`: Get wallet SOL balance 
-- GraphQL API: User positions using query parameter for authentication (api_key=KEY&network=mainnet-beta)
+- REST: `/wallet/balance`: Get wallet SOL balance 
+- GraphQL: User positions and details using query parameter for authentication (api_key=KEY&network=mainnet-beta)
+- GraphQL: Position data including fee claims, rewards, and liquidity
+- GraphQL Derived: Deposits, withdrawals, fee claims, and rewards extracted from position data
 
-### Requires premium API key (currently unavailable):
+### Derived Data Implementation
+The dashboard extracts additional data not directly available through the API:
+- Deposits: Created from position data (when a position exists, a deposit must have happened)
+- Fee Claims: Extracted from position's totalClaimedFeeXAmount and totalClaimedFeeYAmount fields
+- Reward Claims: Extracted from position's totalClaimedRewards field
+- Withdrawals: Derived from position state changes (currently stub implementation)
+
+### GraphQL Schema Access Pattern
+- Position data: `meteora_dlmm_Position` and `meteora_dlmm_PositionV2` tables
+- LB Pair details: `meteora_dlmm_LbPair` table
+
+### Requires premium API key (unavailable but gracefully handled):
 - `/wallet/tokens`: Get wallet token balances
 - `/lb/pairs`: Get all liquidity pairs
 - `/lb/positions_and_deposits`: Get pool positions and deposits
