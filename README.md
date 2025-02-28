@@ -34,10 +34,25 @@ solana-dashboard/
 │   │   └── testLiquidityFetch.js
 │   ├── config.js           # Configuration settings
 │   └── index.js            # Main entry point
-├── .env                    # Environment variables (not in repo)
-├── package.json
-└── README.md
 ```
+
+## Architecture Overview
+
+This project uses a layered architecture:
+
+1. **API Layer** - Communicates with external services (Shyft API)
+2. **Service Layer** - Handles business logic and orchestrates operations
+3. **Repository Layer** - Manages data storage and retrieval from Supabase
+4. **Utility Layer** - Provides common functionality like error handling and validation
+
+## Shyft API Integration
+
+- REST API for simple queries (wallet balance)
+- GraphQL API for complex data (position queries)
+- Key features:
+  - Wallet balance and token data
+  - Liquidity pool information
+  - Position details and history
 
 ## Getting Started
 
@@ -45,7 +60,7 @@ solana-dashboard/
 
 - Node.js 16+
 - Supabase account (for data storage)
-- Shyft API key (for Solana data access)
+- Shyft API key (provided in configuration)
 
 ### Installation
 
@@ -62,8 +77,8 @@ npm install
 
 3. Create a `.env` file in the root directory with the following content:
 ```
-SHYFT_API_KEY=your_shyft_api_key
-SUPABASE_KEY=your_supabase_key
+SHYFT_API_KEY=AbxJeco_29wXz_qF
+SUPABASE_KEY=your_supabase_key_here
 ```
 
 ### Running the Application
@@ -90,6 +105,11 @@ Run all tests:
 npm test
 ```
 
+Test API integration directly:
+```
+node src/test.js
+```
+
 ## Database Schema
 
 The application uses the following tables in Supabase:
@@ -100,6 +120,14 @@ The application uses the following tables in Supabase:
 - `user_deposits`: Stores user's deposit history
 - `user_withdrawals`: Stores user's withdrawal history
 - `user_claims`: Stores user's fee claim history
+
+## Key Components
+
+- **shyftClient.js**: Base client for communicating with Shyft API
+- **walletService.js**: Service for wallet-related operations
+- **liquidityService.js**: Service for liquidity pool operations
+- **dataService.js**: Orchestrates data flow between API and database
+- **dashboardApi.js**: Provides API endpoints for the UI
 
 ## License
 
