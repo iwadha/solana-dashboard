@@ -103,13 +103,25 @@ const dashboardApi = {
         await dataService.fetchAndStoreUserDeposits(walletAddress);
         await dataService.fetchAndStoreUserWithdrawals(walletAddress);
         await dataService.fetchAndStoreUserClaims(walletAddress);
+        await dataService.fetchAndStoreUserRewardClaims(walletAddress);
         
-        // For a real implementation, we would fetch this from the database
-        // This is just a placeholder
+        // Get wallet data which includes transaction history
+        const walletResult = await dataService.getWalletDashboardData(walletAddress);
+        
+        if (!walletResult.success) {
+            return walletResult;
+        }
+        
+        // Extract and return just the transactions portion of the dashboard data
         return {
             success: true,
             data: {
-                transactions: [] // We would get this from the database
+                transactions: walletResult.data.transactions || {
+                    deposits: [],
+                    withdrawals: [],
+                    feeClaims: [],
+                    rewardClaims: []
+                }
             }
         };
     }

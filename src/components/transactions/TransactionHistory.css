@@ -1,0 +1,67 @@
+.transaction-history-card {
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.transaction-tabs .nav-link {
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+}
+
+.transaction-tabs .badge {
+  margin-left: 0.5rem;
+  font-weight: 500;
+}
+
+.transaction-table {
+  font-size: 0.9rem;
+}
+
+.transaction-table th {
+  font-weight: 600;
+  background-color: #f9fafb;
+}
+
+.transaction-table td.pool-address,
+.transaction-table td.position-id,
+.transaction-table td.tx-hash {
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.transaction-table td.amount {
+  text-align: right;
+}
+
+.transaction-table td.timestamp {
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.transaction-table .badge {
+  padding: 0.4em 0.6em;
+  font-weight: 500;
+}
+
+/* Responsive design adjustments */
+@media (max-width: 992px) {
+  .transaction-table td.pool-address,
+  .transaction-table td.position-id {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .transaction-tabs .nav-link {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.5rem;
+  }
+  
+  .transaction-tabs .badge {
+    font-size: 0.7rem;
+  }
+}

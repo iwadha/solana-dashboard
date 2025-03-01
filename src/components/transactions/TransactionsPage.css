@@ -1,0 +1,39 @@
+.transactions-page {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-weight: 600;
+  color: #212529;
+}
+
+.refresh-button {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 576px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .page-header h2 {
+    margin-bottom: 1rem;
+  }
+  
+  .refresh-button {
+    align-self: flex-end;
+  }
+}

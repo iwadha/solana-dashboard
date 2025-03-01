@@ -476,6 +476,293 @@ class DataService {
             };
         }
     }
+
+    /**
+     * Gets wallet positions for the React client
+     * @param {string} walletAddress - The wallet address
+     * @returns {Promise<Object>} - Result with success status and data/error
+     */
+    async getWalletPositions(walletAddress) {
+        try {
+            // Get positions data
+            const positionsResult = await liquidityRepository.getUserPositions(walletAddress);
+            
+            if (!positionsResult.success) {
+                return {
+                    success: false,
+                    error: handleError('DataService.getWalletPositions - Failed to get positions', positionsResult.error)
+                };
+            }
+            
+            // Format positions data for the client
+            const positions = positionsResult.data.map(position => {
+                return {
+                    id: position.position_id || position.id || `${position.pool_address}-${position.lower_bin}-${position.upper_bin}`,
+                    pool: position.pool_address,
+                    lowerTick: position.lower_bin,
+                    upperTick: position.upper_bin,
+                    liquidity: position.liquidity || position.liquidityShares || 0,
+                    tokenXAmount: position.token_x_amount || 0,
+                    tokenYAmount: position.token_y_amount || 0,
+                    depositValue: '$0', // Would need to calculate based on token values
+                    feesEarned: '$0', // Would need to calculate from fee claims
+                    rewardsEarned: '$0', // Would need to calculate from reward claims
+                    status: 'active' // Would need logic to determine if closed
+                };
+            });
+            
+            return {
+                success: true,
+                data: positions
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: handleError('DataService.getWalletPositions', error)
+            };
+        }
+    }
+    
+    /**
+     * Gets wallet transactions with optional filtering for the React client
+     * @param {string} walletAddress - The wallet address
+     * @param {Object} filters - Optional filters (type, startDate, endDate, pool, limit, offset)
+     * @returns {Promise<Object>} - Result with success status and data/error
+     */
+    async getWalletTransactions(walletAddress, filters = {}) {
+        try {
+            // Get wallet data
+            const walletResult = await walletRepository.getWalletData(walletAddress);
+            
+            if (!walletResult.success || !walletResult.data) {
+                return {
+                    success: false,
+                    error: handleError('DataService.getWalletTransactions - Failed to get wallet data', 
+                        walletResult.error || new Error('Wallet not found'))
+                };
+            }
+            
+            const wallet = walletResult.data;
+            
+            if (!wallet.lp_positions) {
+                return {
+                    success: true,
+                    data: {
+                        transactions: [],
+                        total: 0
+                    }
+                };
+            }
+            
+            // Combine all transaction types
+            let allTransactions = [];
+            
+            // Add deposits
+            if (wallet.lp_positions.deposits && (!filters.type || filters.type === 'deposit')) {
+                allTransactions = allTransactions.concat(
+                    wallet.lp_positions.deposits.map(t => ({ 
+                        ...t, 
+                        type: 'deposit',
+                        // Format for client
+                        id: t.id || t.tx_hash || `${t.pool_address}-${t.timestamp}`,
+                        timestamp: t.timestamp,
+                        amount: `$${(parseFloat(t.token_x_amount || 0) + parseFloat(t.token_y_amount || 0)).toFixed(2)}`,
+                        tokenAmounts: {
+                            tokenA: t.token_x_amount || '0',
+                            tokenB: t.token_y_amount || '0'
+                        },
+                        status: 'completed',
+                        txHash: t.tx_hash || t.transaction_hash || ''
+                    }))
+                );
+            }
+            
+            // Add withdrawals
+            if (wallet.lp_positions.withdrawals && (!filters.type || filters.type === 'withdrawal')) {
+                allTransactions = allTransactions.concat(
+                    wallet.lp_positions.withdrawals.map(t => ({ 
+                        ...t, 
+                        type: 'withdrawal',
+                        // Format for client
+                        id: t.id || t.tx_hash || `${t.pool_address}-${t.timestamp}`,
+                        timestamp: t.timestamp,
+                        amount: `$${(parseFloat(t.token_x_amount || 0) + parseFloat(t.token_y_amount || 0)).toFixed(2)}`,
+                        tokenAmounts: {
+                            tokenA: t.token_x_amount || '0',
+                            tokenB: t.token_y_amount || '0'
+                        },
+                        status: 'completed',
+                        txHash: t.tx_hash || t.transaction_hash || ''
+                    }))
+                );
+            }
+            
+            // Add fee claims
+            if (wallet.lp_positions.fee_claims && (!filters.type || filters.type === 'fee_claim')) {
+                allTransactions = allTransactions.concat(
+                    wallet.lp_positions.fee_claims.map(t => ({ 
+                        ...t, 
+                        type: 'fee_claim',
+                        // Format for client
+                        id: t.id || t.tx_hash || `${t.pool_address}-${t.timestamp}`,
+                        timestamp: t.timestamp,
+                        amount: `$${(parseFloat(t.token_x_amount || 0) + parseFloat(t.token_y_amount || 0)).toFixed(2)}`,
+                        tokenAmounts: {
+                            tokenA: t.token_x_amount || '0',
+                            tokenB: t.token_y_amount || '0'
+                        },
+                        status: 'completed',
+                        txHash: t.tx_hash || t.transaction_hash || ''
+                    }))
+                );
+            }
+            
+            // Add reward claims
+            if (wallet.lp_positions.reward_claims && (!filters.type || filters.type === 'reward_claim')) {
+                allTransactions = allTransactions.concat(
+                    wallet.lp_positions.reward_claims.map(t => ({ 
+                        ...t, 
+                        type: 'reward_claim',
+                        // Format for client
+                        id: t.id || t.tx_hash || `${t.pool_address}-${t.timestamp}`,
+                        timestamp: t.timestamp,
+                        amount: `$${(parseFloat(t.amounts?.[0] || 0)).toFixed(2)}`,
+                        tokenAmounts: {
+                            rewards: t.amounts || ['0']
+                        },
+                        status: 'completed',
+                        txHash: t.tx_hash || t.transaction_hash || ''
+                    }))
+                );
+            }
+            
+            // Apply date filters
+            if (filters.startDate) {
+                const startDate = new Date(filters.startDate);
+                allTransactions = allTransactions.filter(t => 
+                    new Date(t.timestamp) >= startDate
+                );
+            }
+            
+            if (filters.endDate) {
+                const endDate = new Date(filters.endDate);
+                allTransactions = allTransactions.filter(t => 
+                    new Date(t.timestamp) <= endDate
+                );
+            }
+            
+            // Apply pool filter
+            if (filters.pool) {
+                allTransactions = allTransactions.filter(t => 
+                    t.pool_address === filters.pool || t.pool === filters.pool
+                );
+            }
+            
+            // Sort by timestamp (most recent first)
+            allTransactions.sort((a, b) => 
+                new Date(b.timestamp) - new Date(a.timestamp)
+            );
+            
+            // Apply pagination
+            const offset = filters.offset || 0;
+            const limit = filters.limit || 100;
+            const paginatedTransactions = allTransactions.slice(offset, offset + limit);
+            
+            return {
+                success: true,
+                data: {
+                    transactions: paginatedTransactions,
+                    total: allTransactions.length
+                }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: handleError('DataService.getWalletTransactions', error)
+            };
+        }
+    }
+    
+    /**
+     * Gets transaction details by ID for the React client
+     * @param {string} walletAddress - The wallet address
+     * @param {string} transactionId - The transaction ID
+     * @returns {Promise<Object>} - Result with success status and data/error
+     */
+    async getTransactionDetails(walletAddress, transactionId) {
+        try {
+            // Get wallet data
+            const walletResult = await walletRepository.getWalletData(walletAddress);
+            
+            if (!walletResult.success || !walletResult.data) {
+                return {
+                    success: false,
+                    error: handleError('DataService.getTransactionDetails - Failed to get wallet data', 
+                        walletResult.error || new Error('Wallet not found'))
+                };
+            }
+            
+            const wallet = walletResult.data;
+            
+            if (!wallet.lp_positions) {
+                return {
+                    success: false,
+                    error: handleError('DataService.getTransactionDetails - No transaction data found', null)
+                };
+            }
+            
+            // Search for transaction in all categories
+            const transactionTypes = [
+                {type: 'deposits', clientType: 'deposit'}, 
+                {type: 'withdrawals', clientType: 'withdrawal'}, 
+                {type: 'fee_claims', clientType: 'fee_claim'}, 
+                {type: 'reward_claims', clientType: 'reward_claim'}
+            ];
+            
+            for (const {type, clientType} of transactionTypes) {
+                if (wallet.lp_positions[type]) {
+                    // Match by either id or tx_hash
+                    const transaction = wallet.lp_positions[type].find(t => 
+                        t.id === transactionId || t.tx_hash === transactionId || t.transaction_hash === transactionId
+                    );
+                    
+                    if (transaction) {
+                        // Format transaction for client
+                        return {
+                            success: true,
+                            data: {
+                                ...transaction,
+                                type: clientType,
+                                id: transaction.id || transaction.tx_hash || `${transaction.pool_address}-${transaction.timestamp}`,
+                                timestamp: transaction.timestamp,
+                                amount: type === 'reward_claims' 
+                                    ? `$${(parseFloat(transaction.amounts?.[0] || 0)).toFixed(2)}`
+                                    : `$${(parseFloat(transaction.token_x_amount || 0) + parseFloat(transaction.token_y_amount || 0)).toFixed(2)}`,
+                                tokenAmounts: type === 'reward_claims'
+                                    ? {rewards: transaction.amounts || ['0']}
+                                    : {
+                                        tokenA: transaction.token_x_amount || '0',
+                                        tokenB: transaction.token_y_amount || '0'
+                                    },
+                                status: 'completed',
+                                txHash: transaction.tx_hash || transaction.transaction_hash || ''
+                            }
+                        };
+                    }
+                }
+            }
+            
+            return {
+                success: false,
+                error: handleError('DataService.getTransactionDetails - Transaction not found', null)
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: handleError('DataService.getTransactionDetails', error)
+            };
+        }
+    }
 }
 
 module.exports = new DataService();
