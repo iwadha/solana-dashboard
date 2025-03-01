@@ -7,6 +7,8 @@
 - Run wallet test: `npm run test:wallet`
 - Run liquidity test: `npm run test:liquidity`
 - Test API integration: `node src/test.js`
+- Test transactions: `node test_transactions.js`
+- Test dashboard data: `node test_dashboard_data.js`
 
 ## Environment Variables
 - Shyft API Key: `AbxJeco_29wXz_qF` (Free tier key with limited access)
@@ -34,7 +36,9 @@ solana-dashboard/
 │   │   └── validator.js
 │   ├── tests/              # Test scripts
 │   │   ├── testWalletFetch.js
-│   │   └── testLiquidityFetch.js
+│   │   ├── testLiquidityFetch.js
+│   │   ├── test_transactions.js
+│   │   └── test_dashboard_data.js
 │   ├── config.js           # Configuration settings
 │   └── index.js            # Main entry point
 ```
@@ -54,7 +58,8 @@ The dashboard extracts additional data not directly available through the API:
 - Deposits: Created from position data (when a position exists, a deposit must have happened)
 - Fee Claims: Extracted from position's totalClaimedFeeXAmount and totalClaimedFeeYAmount fields
 - Reward Claims: Extracted from position's totalClaimedRewards field
-- Withdrawals: Derived from position state changes (currently stub implementation)
+- Withdrawals: Derived from position state changes
+- Transaction History: All transaction types (deposits, withdrawals, fee claims, reward claims) are stored in the `lp_positions` JSON column of the wallets table
 
 ### GraphQL Schema Access Pattern
 - Position data: `meteora_dlmm_Position` and `meteora_dlmm_PositionV2` tables
@@ -69,6 +74,12 @@ The dashboard extracts additional data not directly available through the API:
 - `/lb/withdrawals`: Get user withdrawals
 - `/lb/fees_claimed`: Get user fee claims
 - `/lb/pool_by_tokens`: Get pool by token addresses
+
+## Data Storage Approach
+- All liquidity positions and transaction history are stored in the `lp_positions` JSON column of the wallets table
+- When new transactions are fetched, they are merged with existing data in the JSON field
+- The dashboard data retrieval method returns both position data and transaction history
+- Transaction types include: deposits, withdrawals, fee claims, and reward claims
 
 ## Code Style Guidelines
 - **Module System**: CommonJS (require/module.exports)

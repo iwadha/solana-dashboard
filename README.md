@@ -5,9 +5,9 @@ A backend service for retrieving, processing, and presenting Solana wallet data 
 ## Features
 
 - Fetch wallet balances and token data from Solana blockchain
-- Track liquidity pool positions, deposits, withdrawals, and fee claims
-- Store historical data in Supabase database
-- Provide clean API endpoints for dashboard UI consumption
+- Track liquidity pool positions, deposits, withdrawals, fee claims, and reward claims
+- Store comprehensive transaction history in Supabase database
+- Provide clean API endpoints for dashboard UI consumption with complete transaction data
 
 ## Project Structure
 
@@ -31,7 +31,9 @@ solana-dashboard/
 │   │   └── validator.js
 │   ├── tests/              # Test scripts
 │   │   ├── testWalletFetch.js
-│   │   └── testLiquidityFetch.js
+│   │   ├── testLiquidityFetch.js
+│   │   ├── test_transactions.js
+│   │   └── test_dashboard_data.js
 │   ├── config.js           # Configuration settings
 │   └── index.js            # Main entry point
 ```
@@ -111,24 +113,35 @@ Test API integration directly:
 node src/test.js
 ```
 
+Test transaction data retrieval:
+```
+node test_transactions.js
+```
+
+Test dashboard data with transactions:
+```
+node test_dashboard_data.js
+```
+
 ## Database Schema
 
 The application uses the following tables in Supabase:
 
-- `wallets`: Stores wallet balances and token holdings
+- `wallets`: Stores wallet balances, token holdings, and transaction history
+  - Contains a JSON column `lp_positions` that stores all transaction data
+  - Transaction types include: positions, deposits, withdrawals, fee claims, and reward claims
 - `pools`: Stores liquidity pool information
-- `user_positions`: Stores user's liquidity positions
-- `user_deposits`: Stores user's deposit history
-- `user_withdrawals`: Stores user's withdrawal history
-- `user_claims`: Stores user's fee claim history
+
+All transaction data is stored in the `lp_positions` JSON column of the `wallets` table, which provides flexibility and avoids the need for separate tables for each transaction type.
 
 ## Key Components
 
 - **shyftClient.js**: Base client for communicating with Shyft API
 - **walletService.js**: Service for wallet-related operations
 - **liquidityService.js**: Service for liquidity pool operations
-- **dataService.js**: Orchestrates data flow between API and database
-- **dashboardApi.js**: Provides API endpoints for the UI
+- **dataService.js**: Orchestrates data flow between API and database, handles transaction data
+- **walletRepository.js**: Manages wallet data storage with JSON field handling for transactions
+- **dashboardApi.js**: Provides API endpoints for the UI with complete transaction history
 
 ## License
 

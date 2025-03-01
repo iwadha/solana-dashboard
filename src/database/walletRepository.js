@@ -12,7 +12,10 @@ class WalletRepository {
      */
     async storeWalletData(walletData) {
         try {
-            // Create record data
+            // Log the keys in the wallet data
+            console.log(`Storing wallet data with fields: ${Object.keys(walletData).join(', ')}`);
+            
+            // Create record data with all fields from walletData
             const recordData = {
                 wallet_address: walletData.wallet_address,
                 sol_balance: walletData.sol_balance,
@@ -20,11 +23,18 @@ class WalletRepository {
                 liquidity_positions: walletData.liquidity_positions || [],
                 created_at: walletData.timestamp || new Date().toISOString()
             };
+            
+            // Handle lp_positions as a single JSON field - preferred approach
+            if (walletData.lp_positions) {
+                recordData.lp_positions = walletData.lp_positions;
+            }
+            
+            console.log(`Record data has fields: ${Object.keys(recordData).join(', ')}`);
 
             // First check if this wallet address already exists
             const { data: existingData, error: queryError } = await supabase
                 .from('wallets')
-                .select('id')
+                .select('id, lp_positions')
                 .eq('wallet_address', walletData.wallet_address)
                 .limit(1);
 
@@ -39,6 +49,15 @@ class WalletRepository {
             
             // If wallet already exists, update the existing record
             if (existingData && existingData.length > 0) {
+                // If we're updating lp_positions, merge with existing data
+                if (walletData.lp_positions && existingData[0].lp_positions) {
+                    recordData.lp_positions = {
+                        ...existingData[0].lp_positions,
+                        ...walletData.lp_positions
+                    };
+                    console.log('Merged lp_positions with existing data');
+                }
+                
                 const { data, error } = await supabase
                     .from('wallets')
                     .update(recordData)
@@ -59,6 +78,7 @@ class WalletRepository {
             }
                 
             if (result.error) {
+                console.error('Error storing wallet data:', result.error);
                 return {
                     success: false,
                     error: handleError('WalletRepository.storeWalletData', result.error, false)
@@ -70,6 +90,7 @@ class WalletRepository {
                 data: result.data
             };
         } catch (error) {
+            console.error('Exception in storeWalletData:', error);
             return {
                 success: false,
                 error: handleError('WalletRepository.storeWalletData', error)

@@ -99,7 +99,7 @@ class DataService {
                     }
                 }
                 
-                // Store position data
+                // Store position data in user_positions table
                 await liquidityRepository.storePositionData({
                     wallet_address: walletAddress,
                     pool_address: lbPairAddress,
@@ -112,6 +112,9 @@ class DataService {
                 });
             }
             
+            // Store positions in wallet liquidity_positions field
+            await this.updateWalletLiquidityPositions(walletAddress, positions);
+            
             return {
                 success: true,
                 data: {
@@ -123,6 +126,106 @@ class DataService {
             return {
                 success: false,
                 error: handleError('DataService.fetchAndStorePositionData', error)
+            };
+        }
+    }
+    
+    /**
+     * Update wallet record with liquidity positions
+     * @param {string} walletAddress - Wallet address
+     * @param {Array} positions - Position data to store
+     * @returns {Promise<Object>} Operation result
+     */
+    async updateWalletLiquidityPositions(walletAddress, positions) {
+        try {
+            // First get the current wallet data
+            const walletResult = await walletRepository.getWalletData(walletAddress);
+            
+            // If wallet doesn't exist, create it
+            if (!walletResult.success || !walletResult.data) {
+                // Create a basic wallet record with positions
+                return await walletRepository.storeWalletData({
+                    wallet_address: walletAddress,
+                    sol_balance: 0,
+                    token_balances: [],
+                    liquidity_positions: positions,
+                    lp_positions: { data: positions },
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            // Update existing wallet with positions
+            const updatedWalletData = {
+                ...walletResult.data,
+                liquidity_positions: positions,
+                lp_positions: { ...(walletResult.data.lp_positions || {}), data: positions },
+                updated_at: new Date().toISOString()
+            };
+            
+            return await walletRepository.storeWalletData(updatedWalletData);
+        } catch (error) {
+            return {
+                success: false,
+                error: handleError('DataService.updateWalletLiquidityPositions', error)
+            };
+        }
+    }
+    
+    /**
+     * Update wallet record with transaction data (deposits, withdrawals, claims, etc.)
+     * @param {string} walletAddress - Wallet address
+     * @param {string} transactionType - Type of transaction data (deposits, withdrawals, fee_claims, reward_claims)
+     * @param {Array} transactions - Transaction data to store
+     * @returns {Promise<Object>} Operation result
+     */
+    async updateWalletTransactionData(walletAddress, transactionType, transactions) {
+        try {
+            console.log(`Updating wallet ${walletAddress} with ${transactions.length} ${transactionType}`);
+            
+            // First get the current wallet data
+            const walletResult = await walletRepository.getWalletData(walletAddress);
+            
+            // If wallet doesn't exist, create it with the transaction data
+            if (!walletResult.success || !walletResult.data) {
+                console.log(`Creating new wallet record for ${walletAddress} with ${transactionType}`);
+                
+                // Create a basic wallet record with lp_positions as a JSON object
+                const walletData = {
+                    wallet_address: walletAddress,
+                    sol_balance: 0,
+                    token_balances: [],
+                    liquidity_positions: [],
+                    lp_positions: { [transactionType]: transactions },
+                    timestamp: new Date().toISOString()
+                };
+                
+                console.log(`Added ${transactions.length} ${transactionType} to new wallet record in lp_positions.${transactionType}`);
+                
+                return await walletRepository.storeWalletData(walletData);
+            }
+            
+            // Update existing wallet with the new transaction data
+            const lpPositions = walletResult.data.lp_positions || {};
+            const updatedLpPositions = {
+                ...lpPositions,
+                [transactionType]: transactions
+            };
+            
+            const updatedWalletData = {
+                ...walletResult.data,
+                lp_positions: updatedLpPositions,
+                updated_at: new Date().toISOString()
+            };
+            
+            console.log(`Added ${transactions.length} ${transactionType} to existing wallet record in lp_positions.${transactionType}`);
+            console.log(`Wallet record now has lp_positions fields: ${Object.keys(updatedLpPositions).join(', ')}`);
+            
+            return await walletRepository.storeWalletData(updatedWalletData);
+        } catch (error) {
+            console.error(`Error updating wallet transaction data for ${transactionType}:`, error);
+            return {
+                success: false,
+                error: handleError(`DataService.updateWalletTransactionData.${transactionType}`, error)
             };
         }
     }
@@ -142,7 +245,7 @@ class DataService {
             
             const deposits = depositsResult.data.result || [];
             
-            // Store each deposit
+            // Store each deposit in the deposits table
             for (const deposit of deposits) {
                 await liquidityRepository.storeDepositData({
                     wallet_address: walletAddress,
@@ -154,6 +257,9 @@ class DataService {
                     timestamp: deposit.timestamp
                 });
             }
+            
+            // Store deposits in wallet record too
+            await this.updateWalletTransactionData(walletAddress, 'deposits', deposits);
             
             return {
                 success: true,
@@ -184,7 +290,7 @@ class DataService {
             
             const withdrawals = withdrawalsResult.data.result || [];
             
-            // Store each withdrawal
+            // Store each withdrawal in the withdrawals table
             for (const withdrawal of withdrawals) {
                 await liquidityRepository.storeWithdrawalData({
                     wallet_address: walletAddress,
@@ -196,6 +302,9 @@ class DataService {
                     timestamp: withdrawal.timestamp
                 });
             }
+            
+            // Store withdrawals in wallet record too
+            await this.updateWalletTransactionData(walletAddress, 'withdrawals', withdrawals);
             
             return {
                 success: true,
@@ -226,7 +335,7 @@ class DataService {
             
             const claims = claimsResult.data.result || [];
             
-            // Store each claim
+            // Store each claim in the claims table
             for (const claim of claims) {
                 await liquidityRepository.storeClaimData({
                     wallet_address: walletAddress,
@@ -238,6 +347,9 @@ class DataService {
                     timestamp: claim.timestamp
                 });
             }
+            
+            // Store claims in wallet record too
+            await this.updateWalletTransactionData(walletAddress, 'fee_claims', claims);
             
             return {
                 success: true,
@@ -268,7 +380,7 @@ class DataService {
             
             const rewards = rewardsResult.data.result || [];
             
-            // Store each reward claim
+            // Store each reward claim in the rewards table
             for (const reward of rewards) {
                 await liquidityRepository.storeRewardClaimData({
                     wallet_address: walletAddress,
@@ -279,6 +391,9 @@ class DataService {
                     timestamp: reward.timestamp
                 });
             }
+            
+            // Store rewards in wallet record too
+            await this.updateWalletTransactionData(walletAddress, 'reward_claims', rewards);
             
             return {
                 success: true,
@@ -312,15 +427,46 @@ class DataService {
                 }
             }
             
-            // Get positions
+            // Get positions from the user_positions table
             const positionsResult = await liquidityRepository.getUserPositions(walletAddress);
+            
+            // Get the updated wallet data again (might have been updated above)
+            const updatedWalletResult = await walletRepository.getWalletData(walletAddress);
+            const wallet = updatedWalletResult.success ? updatedWalletResult.data : null;
+            
+            // Use positions from wallets.liquidity_positions if available, otherwise fall back to user_positions table
+            let positions = [];
+            
+            if (wallet && wallet.liquidity_positions && wallet.liquidity_positions.length > 0) {
+                console.log(`Using ${wallet.liquidity_positions.length} positions from wallet.liquidity_positions`);
+                positions = wallet.liquidity_positions;
+            } else if (wallet && wallet.lp_positions && wallet.lp_positions.positions && wallet.lp_positions.positions.length > 0) {
+                console.log(`Using ${wallet.lp_positions.positions.length} positions from wallet.lp_positions.positions`);
+                positions = wallet.lp_positions.positions;
+            } else if (positionsResult.success && positionsResult.data.length > 0) {
+                console.log(`Using ${positionsResult.data.length} positions from user_positions table`);
+                positions = positionsResult.data;
+            }
+            
+            // Extract transaction data from wallet.lp_positions
+            const lpPositions = wallet && wallet.lp_positions ? wallet.lp_positions : {};
+            const deposits = lpPositions.deposits || [];
+            const withdrawals = lpPositions.withdrawals || [];
+            const feeClaims = lpPositions.fee_claims || [];
+            const rewardClaims = lpPositions.reward_claims || [];
             
             // Combine data for dashboard
             return {
                 success: true,
                 data: {
-                    wallet: walletResult.data,
-                    positions: positionsResult.success ? positionsResult.data : []
+                    wallet: wallet,
+                    positions: positions,
+                    transactions: {
+                        deposits: deposits,
+                        withdrawals: withdrawals,
+                        feeClaims: feeClaims,
+                        rewardClaims: rewardClaims
+                    }
                 }
             };
         } catch (error) {
